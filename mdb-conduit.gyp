@@ -720,6 +720,7 @@
 			"type": "static_library",
 			"product_prefix": "lib",
 			"dependencies": [
+				"setup_mongo_src",
 				"libmongo_bson",
 				"libmongo_matcher",
 				"libstemmer_c",
