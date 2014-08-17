@@ -608,27 +608,7 @@
 			],
 		},
 		{
-			# TODO: make this call a couple of special scons targets inside mongo to
-			# generate the 4 files we need?
-			"target_name": "setup_mongo_src",
-			"type": "none",
-			"dependencies": [
-				"copy_mongo_src",
-				"temp_copy_mongo_error_codes",		# Temp.
-				"temp_copy_mongo_action_type",		# Temp.
-			],
-			"outputs": [
-				"<(mongo_dest_dir)/base/error_codes.h",
-				"<(mongo_dest_dir)/base/error_codes.cpp",
-				"<(mongo_dest_dir)/db/auth/action_type.h",
-				"<(mongo_dest_dir)/db/auth/action_type.cpp",
-			],
-		},
-		{
 			"target_name": "copy_stemmer_c_src",
-			"dependencies": [
-				"setup_mongo_src"
-			],
 			"type": "none",
 			"copies": [
 				# Copying the third party libs to make sure we cannot accidentally include
@@ -639,6 +619,40 @@
 						"<(third_party_src_dir)/libstemmer_c",
 					],
 				},
+			],
+		},
+		{
+			"target_name": "copy_s2_src",
+			"type": "none",
+			"copies": [
+				# Copying the third party libs to make sure we cannot accidentally include
+				# any mongo files.
+				{
+					"destination": "<(third_party_dest_dir)",
+					"files": [
+						"<(third_party_src_dir)/s2",
+					],
+				},
+			],
+		},
+		{
+			# TODO: make this call a couple of special scons targets inside mongo to
+			# generate the 4 files we need?
+			"target_name": "setup_mongo_src",
+			"type": "none",
+			"dependencies": [
+				"copy_mongo_src",
+				"temp_copy_mongo_error_codes",		# Temp.
+				"temp_copy_mongo_action_type",		# Temp.
+				"copy_stemmer_c_src",
+				"copy_s2_src",
+
+			],
+			"outputs": [
+				"<(mongo_dest_dir)/base/error_codes.h",
+				"<(mongo_dest_dir)/base/error_codes.cpp",
+				"<(mongo_dest_dir)/db/auth/action_type.h",
+				"<(mongo_dest_dir)/db/auth/action_type.cpp",
 			],
 		},
 		{
@@ -656,28 +670,11 @@
 			],
 		},
 		{
-			"target_name": "copy_s2_src",
-			"dependencies": [
-				"setup_mongo_src"
-			],
-			"type": "none",
-			"copies": [
-				# Copying the third party libs to make sure we cannot accidentally include
-				# any mongo files.
-				{
-					"destination": "<(third_party_dest_dir)",
-					"files": [
-						"<(third_party_src_dir)/s2",
-					],
-				},
-			],
-		},
-		{
 			# Note: Mongo links with all of the s2 libs, I'm leaving it at the main one
 			# for now because that got rid of the (initial) undefined symbol errors.
 			# If base, strings, etc... are need, just copy this block and use the other
 			# vars in s2_src_list.gypi.
-			"target_name": "s2",
+			"target_name": "libs2",
 			"dependencies": [
 				"copy_s2_src",
 			],
@@ -709,6 +706,7 @@
 			"type": "static_library",								# is using an old version of gyp that does not
 			"product_prefix": "lib",									# have the --no-duplicate-basename-check
 			"dependencies": [											# flag.
+				"libs2",
 				"setup_mongo_src",
 			],
 			"sources": [
@@ -724,7 +722,6 @@
 				"libmongo_bson",
 				"libmongo_matcher",
 				"libstemmer_c",
-				"s2",
 			],
 			"include_dirs": [
 				"src",
