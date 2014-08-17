@@ -9,6 +9,7 @@
 		"third_party_dest_dir": "<(LIB_DIR)/third_party",
 		"mongo_src_dir": "third_party/mongo/src/mongo",
 		"mongo_dest_dir": "<(LIB_DIR)/mongo",
+		"mongo_generate_src_dir": "third_party/need_to_generate/mongo",
 		"boost_dir": "<(third_party_dest_dir)/boost",
 		"libstemmer_dir": "<(third_party_dest_dir)/libstemmer_c",
 		"murmurhash3_dir": "<(third_party_dest_dir)/murmurhash3",
@@ -588,8 +589,8 @@
 				{
 					"destination": "<(mongo_dest_dir)/base",
 					"files": [
-							"third_party/need_to_generate/mongo/base/error_codes.h",		# TODO: Need to use scons to generate error_codes.h/cpp.
-							"third_party/need_to_generate/mongo/base/error_codes.cpp",		# TODO: Need to use scons to generate error_codes.h/cpp.
+							"<(mongo_generate_src_dir)/base/error_codes.h",		# TODO: Need to use scons to generate error_codes.h/cpp.
+							"<(mongo_generate_src_dir)/base/error_codes.cpp",		# TODO: Need to use scons to generate error_codes.h/cpp.
 						],
 				},
 			],
@@ -601,8 +602,8 @@
 				{
 					"destination": "<(mongo_dest_dir)/db/auth",
 					"files": [
-							"third_party/need_to_generate/mongo/db/auth/action_type.h",		# TODO: Need to use scons to generate action_type.h/cpp.
-							"third_party/need_to_generate/mongo/db/auth/action_type.cpp",		# TODO: Need to use scons to generate action_type.h/cpp.
+							"<(mongo_generate_src_dir)/db/auth/action_type.h",		# TODO: Need to use scons to generate action_type.h/cpp.
+							"<(mongo_generate_src_dir)/db/auth/action_type.cpp",		# TODO: Need to use scons to generate action_type.h/cpp.
 						],
 				},
 			],
