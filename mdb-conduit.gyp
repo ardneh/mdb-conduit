@@ -732,6 +732,9 @@
 			"include_dirs": [
 				"src",
 			],
+			"cflags_cc": [
+				"--std=c++11",
+			],
 			"link_settings": {
 				"libraries": [
 					"-lmongo_bson",
@@ -743,6 +746,7 @@
 				],
 			},
 			"sources": [
+				"src/aggregate.cpp",
 				"src/db/interrupt_status_noop.cpp",
 				"src/mongo_stubs.cpp",
 
@@ -758,7 +762,7 @@
 			"direct_dependent_settings": {
 				"cflags": [ "<@(mongo_cflags)" ],
 				"cflags!": [ "<@(mongo_cflags_exclude)" ],
-				"cflags_cc": [ "<@(mongo_cflags_cc)" ],
+				"cflags_cc": [ "<@(mongo_cflags_cc)", "--std=c++11" ],
 				"cflags_cc!": [ "<@(mongo_cflags_exclude_cc)" ],
 				"defines": [ "<@(mongo_defines)" ],
 				"defines!": [ "<@(mongo_defines_exclude)" ],

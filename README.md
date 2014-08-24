@@ -33,8 +33,7 @@ Build Requirements
 * A bash compatible shell
 * Git
 * Python
-* The rest of the MongoDB build requirements?
-*  See [Building MongoDB](http://www.mongodb.org/about/contributors/tutorial/build-mongodb-from-source/)
+* A C++11 capable compiler.
 
 Using from C++
 --------------

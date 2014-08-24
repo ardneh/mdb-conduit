@@ -156,7 +156,7 @@
 #"<(LIB_DIR)/mongo/db/client.cpp",		#
 #"<(LIB_DIR)/mongo/db/client_basic.cpp",		#
 #"<(LIB_DIR)/mongo/db/commands.cpp",		# Load.
-#"<(LIB_DIR)/mongo/db/lasterror.cpp",		# Load.
+"<(LIB_DIR)/mongo/db/lasterror.cpp",		# Load.
 "<(LIB_DIR)/mongo/util/log.cpp",		# Load.
 #"<(LIB_DIR)/mongo/db/repl/rs.cpp",		# Load.
 #"<(LIB_DIR)/mongo/s/d_state.cpp",		# Load: shardingState
