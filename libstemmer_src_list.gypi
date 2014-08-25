@@ -3,7 +3,6 @@
 "libstemmer_src_files": [
 "<(LIB_DIR)/third_party/libstemmer_c/runtime/api.c",
 "<(LIB_DIR)/third_party/libstemmer_c/runtime/utilities.c",
-"<(LIB_DIR)/third_party/libstemmer_c/examples/stemwords.c",
 "<(LIB_DIR)/third_party/libstemmer_c/src_c/stem_ISO_8859_1_danish.c",
 "<(LIB_DIR)/third_party/libstemmer_c/src_c/stem_ISO_8859_1_dutch.c",
 "<(LIB_DIR)/third_party/libstemmer_c/src_c/stem_ISO_8859_1_english.c",

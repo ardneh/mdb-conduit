@@ -50,7 +50,7 @@ Development Build Steps
   ```
 * Build.  This should take ~5-6 minutes on a slower box.
   ```sh
-  make -C build
+  DEBUG=1 make -C build
   ```
 
 License

@@ -1,4 +1,3 @@
-* Make a standalone test executable that can process a bson dump.
 * Lint.
 * Coalesce and optimize the input pipeline.
 * Make a _json aggregate hook that will take json as input and

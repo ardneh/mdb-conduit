@@ -19,6 +19,7 @@
 		"mongo_cflags_cc": [
 			"-Wnon-virtual-dtor",
 			"-Woverloaded-virtual",
+			"--std=c++11",
 		],
 		"mongo_cflags": [
 			"-Wno-ignored-qualifiers",
@@ -732,16 +733,15 @@
 			"include_dirs": [
 				"src",
 			],
-			"cflags_cc": [
-				"--std=c++11",
-			],
 			"link_settings": {
 				"libraries": [
+					"-lmdb-conduit",
 					"-lmongo_bson",
 					"-lmongo_matcher",
 					"-lstemmer_c",
 					"-ls2",
 					"-lpcrecpp",
+					"-lpthread",
 					"-L<(LIB_DIR)",
 				],
 			},
@@ -762,7 +762,7 @@
 			"direct_dependent_settings": {
 				"cflags": [ "<@(mongo_cflags)" ],
 				"cflags!": [ "<@(mongo_cflags_exclude)" ],
-				"cflags_cc": [ "<@(mongo_cflags_cc)", "--std=c++11" ],
+				"cflags_cc": [ "<@(mongo_cflags_cc)" ],
 				"cflags_cc!": [ "<@(mongo_cflags_exclude_cc)" ],
 				"defines": [ "<@(mongo_defines)" ],
 				"defines!": [ "<@(mongo_defines_exclude)" ],
@@ -773,6 +773,41 @@
 					"<(LIB_DIR)",	# It uses mongo/util/log.h
 				],
 			},
-		}
+		},
+		{
+			"target_name": "mdb-conduit",
+			"type": "executable",
+			"variables": {
+				"boost_fs_src_dir": "<(boost_dir)/libs/filesystem/v3/src",
+				"boost_po_src_dir": "<(boost_dir)/libs/program_options/src",
+			},
+			"dependencies": [
+				"libmdb-conduit",
+			],
+			"include_dirs": [
+				"src",
+			],
+			"sources": [
+				"src/tools/mdb_conduit.cpp",
+
+				# TODO: build these via boost?
+				"<(boost_fs_src_dir)/path.cpp",
+				#"<(boost_fs_src_dir)/codecvt_error_category.cpp",
+
+				"<(boost_po_src_dir)/cmdline.cpp",
+				"<(boost_po_src_dir)/config_file.cpp",
+				"<(boost_po_src_dir)/convert.cpp",
+				"<(boost_po_src_dir)/options_description.cpp",
+				"<(boost_po_src_dir)/parsers.cpp",
+				"<(boost_po_src_dir)/positional_options.cpp",
+				"<(boost_po_src_dir)/split.cpp",
+				"<(boost_po_src_dir)/utf8_codecvt_facet.cpp",
+				"<(boost_po_src_dir)/value_semantic.cpp",
+				"<(boost_po_src_dir)/variables_map.cpp",
+			],
+			"ldflags": [
+				"-Wl,--unresolved-symbols=ignore-all",		# This is temporary-ish.
+			],
+		},
 	]  # End targets.
 }

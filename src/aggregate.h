@@ -79,7 +79,7 @@ namespace mdb {
          virtual ~Aggregate();
 
          //Run the pipeline against data and store the results in result.
-         //void operator()(const BSONObj& data, BSONObjBuilder& result);
+         void operator()(const BSONObj& data, BSONObjBuilder& result);
 
          //Run the pipeline against the documents provided by source and
          //store the results in result.
@@ -93,7 +93,12 @@ namespace mdb {
          //bool isExplain() const;
          //vector<Value> writeExplainOps() const;
 
+      protected:
+         void prepareSource(
+            intrusive_ptr<mongo::DocumentSource> source);
+
       private:
+
             //Prevent basic clients from having to pull in / know anything about
             //the internals of mongo pipelines.
             struct Impl;

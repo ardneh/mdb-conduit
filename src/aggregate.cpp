@@ -81,30 +81,47 @@ namespace mdb {
 
    }
 
-   /*void Aggregate::operator()(
+   void Aggregate::operator()(
       const BSONObj& data,
       BSONObjBuilder& result) {
 
-      throw std::runtime_error("Aggregate() directly against bson isn't \
-      implemented yet")
-   }*/
+      auto pipeline(impl->pipeline);
+
+      auto source(DocumentSourceBsonArray::create(
+         data,
+         pipeline->getContext()));
+
+      prepareSource(source);
+
+      pipeline->run(result);
+   }
 
    void Aggregate::operator()(
       intrusive_ptr<mongo::DocumentSource> source,
       BSONObjBuilder& result) {
 
-      intrusive_ptr<Pipeline> pipeline(impl->pipeline);
+      prepareSource(source);
 
-      pipeline->addInitialSource(source);
-      pipeline->stitch();
-      pipeline->run(result);
-
-      //TODO: remove the initialSource.  Need to do so for exceptions, too.
+      impl->pipeline->run(result);
    }
 
    intrusive_ptr<mongo::ExpressionContext>
    Aggregate::getContext() const {
       return impl->pipeline->getContext();
    }
+
+   void Aggregate::prepareSource(
+      intrusive_ptr<mongo::DocumentSource> source) {
+         auto pipeline(impl->pipeline);
+
+         // These steps were pieced together from:
+         //  PipelineD::prepareCursorSource(aggregator, pCtx);
+         // TODO: I've skipped a bunch of steps like coalescing just to test this
+         // out, put them back in.
+
+         pipeline->addInitialSource(source);
+         pipeline->stitch();
+      }
+
 
 } //namespace mdb.
