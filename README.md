@@ -9,9 +9,9 @@ Potential uses
 * Profile pipeline operations more easily.
 
 Examples
---------------
+--------
 * As a command.
-  s```sh
+  ```sh
    echo '[{v:5},{v:1},{v:3},{v:4},{v:2},{v:0}]' >> array.json
    mdb-conduit '[{$sort:{v:1}}]' -f "json-json"  array.json
   ```
@@ -54,10 +54,6 @@ Disclaimers
   current state it is not pretty.
 * It is only going to build on `nix platforms for now.  "Linux" should work
   and OS X should be easy to make work if it does not already.
-* This is the first time I've used gyp, so I am certain I could be doing some
-  things better there.  And now it looks like gyp is dead so I'm not going to
-  put much effort into making the gyp files perfect.  Long live gn....
-* This is also my first native node module so it's going to be rough.
 
 Build Requirements
 ------------------
@@ -65,12 +61,6 @@ Build Requirements
 * Git
 * Python
 * A C++11 capable compiler.
-
-Linking
---------------
-If you are using GYP already, just add "<path-to-this-project>/mdb-conduit.gyp:mdb-conduit" to your
-dependencies.  Otherwise, follow the development build steps and link with
-build/out/Debug/obj.target/libmdb-conduit.
 
 Development Build Steps
 -----------------------
@@ -82,7 +72,16 @@ Development Build Steps
 * Build.  This should take ~5-6 minutes on a slower box.
   ```sh
   DEBUG=1 make -C build
+* The `mdb-conduit` executable which allows you to run pipelines against bson
+  or json files is placed in `build/out/Debug/mdb-conduit`.
   ```
+
+Embedding
+---------
+If you are using GYP already, just add "<path-to-this-project>/mdb-conduit.gyp:mdb-conduit" to your
+dependencies.  Otherwise, follow the development build steps and link with
+the libs in `build/out/Debug/obj.target`.  Take a look at mdb-conduit.gyp as well as binding.gyp in
+node-mdb-conduit.
 
 License
 -------
