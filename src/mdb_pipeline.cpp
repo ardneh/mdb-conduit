@@ -26,8 +26,35 @@
  * it in the license file.
  */
 
+/** Misc notes:
 
-#include "aggregate.h"
+   * DocumentSourceOut and DocumentSourceGeoNear 'implement'
+      DocumentSourceNeedsMongod so they are not allowed right now.  I
+      haven't looked much at MongodImplementation but we can
+      probably support at least Geo and maybe our own version of $out (maybe
+      a new file).
+   * See db/commands/pipeline_command.cpp handleCursorCommand() and
+      PipelineRunner for how to get result documents back as they are
+      processed.
+
+      //Streaming output pseudocode.
+      boost::optional<BSONObj> getNextBson() {
+         auto next = _pipeline->output()->getNext();
+         if (next) {
+            if (_includeMetaData) {
+               return next->toBsonWithMetaData();
+            }
+            else {
+               return next->toBson();
+            }
+         }
+
+         return boost::none;
+      }
+ */
+
+
+#include "mdb_pipeline.h"
 
 #include <exception>
 
@@ -40,36 +67,44 @@
 #include "db/interrupt_status_noop.h"
 
 
-using namespace mongo;
+using mongo::Status;
+using mongo::BSONObj;
+using mongo::BSONObjBuilder;
 
-namespace mdb {
 
-   Status intialize_module(const int argc,  const char** argv, const char ** envp) {
-      return runGlobalInitializers(argc, argv, envp);
+namespace conduit {
+
+   Status intialize_module(int argc, char** argv, char** env) {
+      //TODO: fix the missing logger global initializer that is causing this
+      //             to fail.
+      //TODO: determine whether this is even needed for what we are doing.
+      //return mongo::runGlobalInitializers(argc, argv, env);
+
+      return Status::OK();
    }
 
    Status deinitalize_module() {
-      return Status(ErrorCodes::OK, "");
+      return Status::OK();
    }
 
-   struct Aggregate::Impl {
+   struct Pipeline::Impl {
       //If this is going to be the only thing in here, then get rid of Impl.
-      intrusive_ptr<Pipeline> pipeline;
+      MongoPipelinePtr pipeline;
    };
 
-   Aggregate::Aggregate(const BSONObj& pipeline)
-   : impl(new Aggregate::Impl()) {
+   Pipeline::Pipeline(const BSONObj& pipeline)
+   : impl(new Pipeline::Impl()) {
 
-      //The Pipeline class expects to receive a command, so build one.
+      //The mongo::Pipeline class expects to receive a command, so build one.
       BSONObjBuilder bldr;
       bldr.appendArray("pipeline", pipeline);
 
-      intrusive_ptr<ExpressionContext> ctx(
-         new ExpressionContext(InterruptStatusNoop::status,
-            NamespaceString("mdb-conduit")));
+      ExpressionContextPtr ctx(
+         new ExpressionContext(mongo::InterruptStatusNoop::status,
+            mongo::NamespaceString("mdb-conduit")));
 
       std::string errmsg;
-      impl->pipeline = Pipeline::parseCommand(errmsg, bldr.obj(), ctx);
+      impl->pipeline = mongo::Pipeline::parseCommand(errmsg, bldr.obj(), ctx);
 
       if (!impl->pipeline.get()) {
          //TODO: throw UserException instead?
@@ -77,17 +112,17 @@ namespace mdb {
       }
    }
 
-   Aggregate::~Aggregate() {
+   Pipeline::~Pipeline() {
 
    }
 
-   void Aggregate::operator()(
+   void Pipeline::operator()(
       const BSONObj& data,
       BSONObjBuilder& result) {
 
       auto pipeline(impl->pipeline);
 
-      auto source(DocumentSourceBsonArray::create(
+      auto source(mongo::DocumentSourceBsonArray::create(
          data,
          pipeline->getContext()));
 
@@ -96,8 +131,8 @@ namespace mdb {
       pipeline->run(result);
    }
 
-   void Aggregate::operator()(
-      intrusive_ptr<mongo::DocumentSource> source,
+   void Pipeline::operator()(
+      DocumentSourcePtr source,
       BSONObjBuilder& result) {
 
       prepareSource(source);
@@ -105,13 +140,11 @@ namespace mdb {
       impl->pipeline->run(result);
    }
 
-   intrusive_ptr<mongo::ExpressionContext>
-   Aggregate::getContext() const {
+   ExpressionContextPtr Pipeline::getContext() const {
       return impl->pipeline->getContext();
    }
 
-   void Aggregate::prepareSource(
-      intrusive_ptr<mongo::DocumentSource> source) {
+   void Pipeline::prepareSource(DocumentSourcePtr source) {
          auto pipeline(impl->pipeline);
 
          // These steps were pieced together from:
@@ -123,5 +156,4 @@ namespace mdb {
          pipeline->stitch();
       }
 
-
-} //namespace mdb.
+} //namespace conduit.

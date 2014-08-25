@@ -27,12 +27,13 @@
  */
 
 
-#include "aggregate.h"
+#include "mdb_conduit.h"
 
 #include <algorithm>
 #include <exception>
 #include <fstream>
 #include <sstream>
+#include <cstdint>
 #include <vector>
 
 #include <boost/filesystem/operations.hpp>
@@ -40,15 +41,39 @@
 
 #include <mongo/db/json.h>
 
+#include "mdb_pipeline.h"
+
+
+//Driver.
+int main(int argc, char** argv, char** env) {
+   return conduit::conduit_main(argc, argv, env);
+}
+
+// --- Implementation --- //
 
 using namespace std;
 using mongo::BSONObj;
+
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 
-enum class InputFormat {
+//These are the valid input data types.
+enum class InputFormat : uint8_t {
       JSON,
       BSON
+};
+
+//Describe the various things that can go wrong when parsing the
+//command-line arguments.
+enum class CommandLineStatus  : uint8_t {
+   OK,
+   NO_PIPELINE,
+   NO_DATA_FILE,
+   INVALID_FORMAT,
+   CONFLICTING_OPTIONS,
+   EXCEPTION_CAUGHT,
+   FAILED_INITIALIZATION,
+   FAILED_DEINITIALIZATION,
 };
 
 //Converts a json array into bson.
@@ -153,7 +178,7 @@ InputFormat getInputFormat(const string& desc, const string& format) {
    }
 }
 
-void getInputFormats(
+CommandLineStatus getInputFormats(
    const string& formatSpec,
    InputFormat& pipelineFormat,
    InputFormat& dataFormat) {
@@ -161,16 +186,19 @@ void getInputFormats(
    auto delimIdx(formatSpec.find('-'));
 
    if(string::npos == delimIdx || formatSpec.size() < delimIdx+1) {
-      throw logic_error("Invalid format: '" + formatSpec + "'");
+      cerr << "Invalid format: '" << formatSpec << "'";
+      return CommandLineStatus::INVALID_FORMAT;
    }
 
    pipelineFormat = getInputFormat(
       "pipeline", formatSpec.substr(0, delimIdx));
 
    dataFormat  = getInputFormat("data", formatSpec.substr(delimIdx+1));
+
+   return CommandLineStatus::OK;
 }
 
-void conflicting_options(
+CommandLineStatus checkForConflictingOptions(
    const po::variables_map& variables,
    const string& opt1,
    const string& opt2) {
@@ -179,86 +207,142 @@ void conflicting_options(
             opt2Set(variables.count(opt2) && !variables[opt2].defaulted());
 
    if (opt1Set && opt2Set) {
-      throw logic_error(
-         string("Conflicting options '") + opt1 + "' and '" + opt2 + "'.");
+      cerr << "Conflicting options: '" << opt1 << "' and '" << opt2 << "'.";
+      return CommandLineStatus::CONFLICTING_OPTIONS;
    }
+
+   return CommandLineStatus::OK;
 }
 
-int main(int argc, char** argv, char** env) {
+//Parse any command-line arguments.
+//This can throw if something really unexpected happens.
+CommandLineStatus parse_options(
+   int argc,
+   char** argv,
+   char** env,
+   BSONObj& pipeline,
+   BSONObj& data) {
 
-   try {
-      po::options_description options("Options");
-      options.add_options()
-          ("help", "Show usage")
-          ("eval,e", po::value<string>(), "A JSON pipeline to evaluate.")
-          ("pipeline,p", po::value<fs::path>(), "The path to a pipeline to evaluate.")
-          ("data,d", po::value<fs::path>()->required(), "The path to a data file to run the pipeline on.")
-          ("format,f", po::value<string>()->default_value("bson-bson"), "Specifies the input and output format for --pipeline and --data, respectively.  One of: bson-bson, json-json, json-bson, bson-json.")
-      ;
+   po::options_description options("Options");
+   options.add_options()
+       ("help", "Show usage")
+       ("eval,e", po::value<string>(), "A JSON pipeline to evaluate.")
+       ("pipeline,p", po::value<fs::path>(), "The path to a pipeline to evaluate.")
+       ("data,d", po::value<fs::path>()->required(), "The path to a data file to run the pipeline on.")
+       ("format,f", po::value<string>()->default_value("bson-bson"), "Specifies the input and output format for --pipeline and --data, respectively.  One of: bson-bson, json-json, json-bson, bson-json.")
+   ;
 
-      po::positional_options_description p;
-      p.add("data", -1);
+   po::positional_options_description p;
+   p.add("data", -1);
 
-      po::variables_map variables;
-      po::store(po::command_line_parser(argc, argv).
-             options(options).positional(p).run(),  variables);
+   po::variables_map variables;
+   po::store(po::command_line_parser(argc, argv).
+          options(options).positional(p).run(),  variables);
 
-      conflicting_options(variables, "eval", "pipeline");
+   auto conflictCheck(checkForConflictingOptions(variables, "eval", "pipeline"));
 
-      po::notify(variables);
-
-      if (variables.count("help")) {
-          cout << options << "\n";
-          return 0;
-      }
-
-      InputFormat pipelineFormat, dataFormat;
-      getInputFormats(
-         variables["format"].as<string>(),
-         pipelineFormat,
-         dataFormat
-      );
-
-      BSONObj data, pipeline;
-
-      if (variables.count("eval")) {
-         auto pipelineJson(variables["eval"].as<string>());
-
-         pipeline = convertJsonArrayToBson(pipelineJson);
-      }
-      else if(variables.count("pipeline")) {
-         auto path(variables["pipeline"].as<fs::path>());
-
-         pipeline = loadFile(pipelineFormat, path);
-      }
-      else {
-         throw logic_error("You must provide a pipeline via either --eval or\
-            --pipeline.");
-      }
-
-      if (variables.count("data")) {
-         auto path(variables["data"].as<fs::path>());
-
-         data = loadFile(dataFormat, path);
-      }
-      else {
-         //TODO: it might be nice to have a pipeline validation mode.
-         throw logic_error("You must provide a data file.");
-      }
-
-      mdb::Aggregate conduit(pipeline);
-
-      mongo::BSONObjBuilder result;
-      conduit(data, result);
-
-      string jsonResult(result.obj().jsonString());
-
-      cout << jsonResult << '\n';
-
-      return 0;
+   if(CommandLineStatus::OK != conflictCheck) {
+      return conflictCheck;
    }
-   catch(exception& e) {
-      std::cerr << e.what() << '\n';
-      return 1;
+
+   po::notify(variables);
+
+   if (variables.count("help")) {
+       cout << options << "\n";
+       return CommandLineStatus::OK;
    }
+
+   InputFormat pipelineFormat, dataFormat;
+
+   auto formatsResult = getInputFormats(
+      variables["format"].as<string>(),
+      pipelineFormat,
+      dataFormat
+   );
+
+   if(CommandLineStatus::OK != formatsResult) {
+      return formatsResult;
+   }
+
+   if (variables.count("eval")) {
+      auto pipelineJson(variables["eval"].as<string>());
+
+      pipeline = convertJsonArrayToBson(pipelineJson);
+   }
+   else if(variables.count("pipeline")) {
+      auto path(variables["pipeline"].as<fs::path>());
+
+      pipeline = loadFile(pipelineFormat, path);
+   }
+   else {
+      cerr << "You must provide a pipeline via either --eval or --pipeline.";
+      return CommandLineStatus::NO_PIPELINE;
+   }
+
+   if (variables.count("data")) {
+      auto path(variables["data"].as<fs::path>());
+
+      data = loadFile(dataFormat, path);
+   }
+   else {
+      //TODO: it might be nice to have a pipeline validation mode.
+      cerr << "You must provide a data file.";
+      return CommandLineStatus::NO_DATA_FILE;
+   }
+
+   return CommandLineStatus::OK;
 }
+
+namespace conduit {
+
+   int conduit_main(int argc, char** argv, char** env) {
+      try {
+
+         const Status initResult(intialize_module(argc, argv, env));
+
+         if(!initResult.isOK()) {
+            cerr << "Initialization failed: " << initResult.toString() << '\n';
+
+            return static_cast<int>(
+               CommandLineStatus::FAILED_INITIALIZATION);
+         }
+
+         BSONObj data, pipeline;
+
+         auto parseResult(parse_options(argc, argv, env, pipeline, data));
+
+         if(CommandLineStatus::OK != parseResult) {
+            return static_cast<int>(parseResult);
+         }
+
+         conduit::Pipeline conduit(pipeline);
+
+         mongo::BSONObjBuilder result;
+         conduit(data, result);
+
+         string jsonResult(result.obj().jsonString());
+
+         cout << jsonResult << '\n';
+
+         const Status deinitResult(deinitalize_module());
+
+         if(!deinitResult.isOK()) {
+            cerr << "Initialization failed: " << initResult.toString() << '\n';
+
+            return static_cast<int>(
+               CommandLineStatus::FAILED_DEINITIALIZATION);
+         }
+
+         return 0;
+      }
+      catch(exception& e) {
+         std::cerr << e.what() << '\n';
+
+         //We're already toast, don't worry about whether this succeeds.
+         deinitalize_module();
+
+         return static_cast<int>(CommandLineStatus::EXCEPTION_CAUGHT);
+      }
+   }
+
+}  //namespace conduit.

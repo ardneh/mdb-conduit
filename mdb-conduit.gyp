@@ -746,7 +746,7 @@
 				],
 			},
 			"sources": [
-				"src/aggregate.cpp",
+				"src/mdb_pipeline.cpp",
 				"src/db/interrupt_status_noop.cpp",
 				"src/mongo_stubs.cpp",
 

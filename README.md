@@ -8,6 +8,27 @@ Potential uses
 * Test out ideas for new pipeline functionality.
 * Profile pipeline operations more easily.
 
+Examples
+--------------
+* ```C++
+   //Note: I haven't tried to compile this yet, sorry!
+
+   #include <iostream>
+   #include <src/mdb_pipeline.h>
+
+   using namespace conduit;
+
+   void printTransformedData(BSONObj pipeline, BSONObj data) {
+      Pipeline conduit(pipeline);
+
+      BSONObjBuilder result;
+      conduit(data, result);
+
+      cout << result.obj().jsonString());
+   }
+   ```
+* See conduit_main() in src/tools/mdb_conduit.cpp for a full example.
+
 Disclaimers
 -----------
 * The build here is very bare bones and only tested on a newer install of
@@ -35,7 +56,7 @@ Build Requirements
 * Python
 * A C++11 capable compiler.
 
-Using from C++
+Linking
 --------------
 If you are using GYP already, just add "<path-to-this-project>/mdb-conduit.gyp:mdb-conduit" to your
 dependencies.  Otherwise, follow the development build steps and link with
