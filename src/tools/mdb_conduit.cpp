@@ -67,6 +67,7 @@ enum class InputFormat : uint8_t {
 //command-line arguments.
 enum class CommandLineStatus  : uint8_t {
    OK,
+   SHOWED_HELP,
    NO_PIPELINE,
    NO_DATA_FILE,
    INVALID_FORMAT,
@@ -228,7 +229,7 @@ CommandLineStatus parse_options(
        ("help", "Show usage")
        ("eval,e", po::value<string>(), "A JSON pipeline to evaluate.")
        ("pipeline,p", po::value<fs::path>(), "The path to a pipeline to evaluate.")
-       ("data,d", po::value<fs::path>()->required(), "The path to a data file to run the pipeline on.")
+       ("data,d", po::value<fs::path>(), "The path to a data file to run the pipeline on.")
        ("format,f", po::value<string>()->default_value("bson-bson"), "Specifies the input and output format for --pipeline and --data, respectively.  One of: bson-bson, json-json, json-bson, bson-json.")
    ;
 
@@ -313,6 +314,10 @@ namespace conduit {
 
          if(CommandLineStatus::OK != parseResult) {
             return static_cast<int>(parseResult);
+         }
+
+         if(CommandLineStatus::SHOWED_HELP != parseResult) {
+            return 0;
          }
 
          conduit::Pipeline conduit(pipeline);
