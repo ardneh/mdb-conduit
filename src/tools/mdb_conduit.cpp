@@ -44,13 +44,6 @@
 #include "mdb_pipeline.h"
 
 
-//Driver.
-int main(int argc, char** argv, char** env) {
-   return conduit::conduit_main(argc, argv, env);
-}
-
-// --- Implementation --- //
-
 using namespace std;
 using mongo::BSONObj;
 
@@ -96,6 +89,12 @@ BSONObj convertJsonArrayToBson(const string& json) {
 //Read a file into a string.  No JSON validation is performed.
 string loadSmallFile(const fs::path& path) {
    ifstream file(path.native());
+
+   if(!file) {
+      //TODO: don't throw for such a common case.
+      throw runtime_error("Could not open '" + path.native() + "'.");
+   }
+
    return string(istreambuf_iterator<char>(file),
       istreambuf_iterator<char>());
 }
