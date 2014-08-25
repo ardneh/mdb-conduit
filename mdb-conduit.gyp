@@ -721,6 +721,41 @@
 			],
 		},
 		{
+			"target_name": "libconduit_boost",
+			"type": "static_library",
+			"product_prefix": "lib",
+			"dependencies": [
+				"setup_mongo_src",
+			],
+			"variables": {
+				"boost_fs_src_dir": "<(boost_dir)/libs/filesystem/v3/src",
+				"boost_po_src_dir": "<(boost_dir)/libs/program_options/src",
+				"boost_thread_src_dir": "<(boost_dir)/libs/thread/src/pthread",
+			},
+			"sources": [
+				# TODO: build these via boost bjam?
+				"<(boost_dir)/libs/system/src/error_code.cpp",
+
+				"<(boost_thread_src_dir)/thread.cpp",
+				"<(boost_thread_src_dir)/once.cpp",
+
+				"<(boost_fs_src_dir)/path.cpp",
+				"<(boost_fs_src_dir)/operations.cpp",
+				#"<(boost_fs_src_dir)/codecvt_error_category.cpp",
+
+				"<(boost_po_src_dir)/cmdline.cpp",
+				"<(boost_po_src_dir)/config_file.cpp",
+				"<(boost_po_src_dir)/convert.cpp",
+				"<(boost_po_src_dir)/options_description.cpp",
+				"<(boost_po_src_dir)/parsers.cpp",
+				"<(boost_po_src_dir)/positional_options.cpp",
+				"<(boost_po_src_dir)/split.cpp",
+				"<(boost_po_src_dir)/utf8_codecvt_facet.cpp",
+				"<(boost_po_src_dir)/value_semantic.cpp",
+				"<(boost_po_src_dir)/variables_map.cpp",
+			],
+		},
+		{
 			"target_name": "libmdb-conduit",
 			"type": "static_library",
 			"product_prefix": "lib",
@@ -729,6 +764,7 @@
 				"libmongo_bson",
 				"libmongo_matcher",
 				"libstemmer_c",
+				"libconduit_boost",
 			],
 			"include_dirs": [
 				"src",
@@ -740,6 +776,7 @@
 					"-lmongo_matcher",
 					"-lstemmer_c",
 					"-ls2",
+					"-lconduit_boost",
 					"-lpcrecpp",
 					"-lpthread",
 					"-L<(LIB_DIR)",
@@ -747,15 +784,13 @@
 			},
 			"sources": [
 				"src/mdb_pipeline.cpp",
+				"src/tools/mdb_conduit.cpp",
+
 				"src/db/interrupt_status_noop.cpp",
 				"src/mongo_stubs.cpp",
 
 				"<@(mongo_pipeline_src_files)",
 				"<@(mongo_misc_src_files)",
-
-				"<(boost_dir)/libs/thread/src/pthread/thread.cpp",		# TODO: build these via boost?
-				"<(boost_dir)/libs/thread/src/pthread/once.cpp",
-				"<(boost_dir)/libs/system/src/error_code.cpp",
 
 				"<(murmurhash3_dir)/MurmurHash3.cpp",
 			],
@@ -777,10 +812,6 @@
 		{
 			"target_name": "mdb-conduit",
 			"type": "executable",
-			"variables": {
-				"boost_fs_src_dir": "<(boost_dir)/libs/filesystem/v3/src",
-				"boost_po_src_dir": "<(boost_dir)/libs/program_options/src",
-			},
 			"dependencies": [
 				"libmdb-conduit",
 			],
@@ -789,22 +820,6 @@
 			],
 			"sources": [
 				"src/tools/mdb_conduit.cpp",
-
-				# TODO: build these via boost?
-				"<(boost_fs_src_dir)/path.cpp",
-				"<(boost_fs_src_dir)/operations.cpp",
-				#"<(boost_fs_src_dir)/codecvt_error_category.cpp",
-
-				"<(boost_po_src_dir)/cmdline.cpp",
-				"<(boost_po_src_dir)/config_file.cpp",
-				"<(boost_po_src_dir)/convert.cpp",
-				"<(boost_po_src_dir)/options_description.cpp",
-				"<(boost_po_src_dir)/parsers.cpp",
-				"<(boost_po_src_dir)/positional_options.cpp",
-				"<(boost_po_src_dir)/split.cpp",
-				"<(boost_po_src_dir)/utf8_codecvt_facet.cpp",
-				"<(boost_po_src_dir)/value_semantic.cpp",
-				"<(boost_po_src_dir)/variables_map.cpp",
 			],
 			"ldflags": [
 				"-Wl,--unresolved-symbols=ignore-all",		# This is temporary-ish.
