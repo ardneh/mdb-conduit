@@ -29,8 +29,11 @@
 
 #include "aggregate.h"
 
+#include <algorithm>
 #include <exception>
 #include <fstream>
+#include <sstream>
+#include <vector>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/program_options.hpp>
@@ -67,20 +70,68 @@ BSONObj convertJsonArrayToBson(const string& json) {
 //Read a file into a string.  No JSON validation is performed.
 string loadSmallFile(const fs::path& path) {
    ifstream file(path.native());
-   return string((istreambuf_iterator<char>(file)),
+   return string(istreambuf_iterator<char>(file),
       istreambuf_iterator<char>());
 }
 
-BSONObj readBsonFile(const fs::path& path) {
-   return BSONObj();
+BSONObj readSmallBsonFile(const fs::path& path) {
+   //Temp, just for testing.
+   //Based off of BSONTool::processFile().
+   //Going to rewrite this to use a memmapped file
+   //and wrap it all in BsonFileDocumentSource.
+
+   ifstream file(path.native());
+   vector<char> data(fs::file_size(path));
+
+    copy(istreambuf_iterator<char>(file),
+      istreambuf_iterator<char>(), data.begin());
+
+   mongo::BSONArrayBuilder b;
+
+   char* p(&data[0]),
+            *end(p + data.size());
+
+   while(p < end) {
+      size_t objsize(0);
+
+      if((p+4) < end) {
+         memcpy(&objsize, p, 4);
+      }
+      else {
+         stringstream ss;
+         const size_t offset(p - &data[0]);
+
+         ss << "Unexpected end of BSON file '" << path.native()
+               << "' at " << offset << " bytes.";
+
+         throw runtime_error(ss.str());
+      }
+
+      if(objsize > mongo::BSONObjMaxUserSize) {
+         stringstream ss;
+         const size_t offset(p - &data[0]);
+
+         ss << "BSON file '" << path.native()
+               << "' appears to be corrupt near " << offset << " bytes.";
+
+         throw runtime_error(ss.str());
+      }
+
+      BSONObj temp(p);
+      b.append(temp);
+
+      p += objsize;
+   }
+
+   return b.obj();
 }
 
-mongo::BSONObj loadFile(const InputFormat format, const fs::path& path) {
-   mongo::BSONObj result;
+BSONObj loadFile(const InputFormat format, const fs::path& path) {
+   BSONObj result;
 
    switch(format) {
       case InputFormat::BSON:
-         return readBsonFile(path);
+         return readSmallBsonFile(path);
 
       case InputFormat::JSON:
          return convertJsonArrayToBson(loadSmallFile(path));
@@ -168,7 +219,7 @@ int main(int argc, char** argv, char** env) {
          dataFormat
       );
 
-      mongo::BSONObj data, pipeline;
+      BSONObj data, pipeline;
 
       if (variables.count("eval")) {
          auto pipelineJson(variables["eval"].as<string>());

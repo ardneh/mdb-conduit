@@ -792,6 +792,7 @@
 
 				# TODO: build these via boost?
 				"<(boost_fs_src_dir)/path.cpp",
+				"<(boost_fs_src_dir)/operations.cpp",
 				#"<(boost_fs_src_dir)/codecvt_error_category.cpp",
 
 				"<(boost_po_src_dir)/cmdline.cpp",
