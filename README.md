@@ -10,8 +10,14 @@ Potential uses
 
 Examples
 --------------
-* ```C++
-   //Note: I haven't tried to compile this yet, sorry!
+* As a command.
+  s```sh
+   echo '[{v:5},{v:1},{v:3},{v:4},{v:2},{v:0}]' >> array.json
+   mdb-conduit '[{$sort:{v:1}}]' -f "json-json"  array.json
+  ```
+* Programmatically.
+  ```C++
+   //Note: I haven't tried to compile this yet, but it should be close.  Sorry!
 
    #include <iostream>
    #include <src/mdb_pipeline.h>

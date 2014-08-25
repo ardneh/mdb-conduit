@@ -815,11 +815,8 @@
 			"dependencies": [
 				"libmdb-conduit",
 			],
-			"include_dirs": [
-				"src",
-			],
 			"sources": [
-				"src/tools/mdb_conduit.cpp",
+				"src/tools/mdb_conduit_main.cpp",
 			],
 			"ldflags": [
 				"-Wl,--unresolved-symbols=ignore-all",		# This is temporary-ish.

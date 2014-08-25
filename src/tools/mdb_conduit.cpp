@@ -224,13 +224,16 @@ CommandLineStatus parse_options(
    BSONObj& pipeline,
    BSONObj& data) {
 
+   vector<string> formats;
+   const string defaultFormat("bson-bson");
+
    po::options_description options("Options");
    options.add_options()
        ("help", "Show usage")
        ("eval,e", po::value<string>(), "A JSON pipeline to evaluate.")
        ("pipeline,p", po::value<fs::path>(), "The path to a pipeline to evaluate.")
        ("data,d", po::value<fs::path>(), "The path to a data file to run the pipeline on.")
-       ("format,f", po::value<string>()->default_value("bson-bson"), "Specifies the input and output format for --pipeline and --data, respectively.  One of: bson-bson, json-json, json-bson, bson-json.")
+       ("format,f", po::value<vector<string>>(&formats), "Specifies the input and output format for --pipeline and --data, respectively.  One of: bson-bson, json-json, json-bson, bson-json.")
    ;
 
    po::positional_options_description p;
@@ -254,9 +257,10 @@ CommandLineStatus parse_options(
    }
 
    InputFormat pipelineFormat, dataFormat;
+   const string formatSpec(formats.empty() ? defaultFormat : formats.back());
 
    auto formatsResult = getInputFormats(
-      variables["format"].as<string>(),
+      formatSpec,
       pipelineFormat,
       dataFormat
    );
@@ -316,7 +320,7 @@ namespace conduit {
             return static_cast<int>(parseResult);
          }
 
-         if(CommandLineStatus::SHOWED_HELP != parseResult) {
+         if(CommandLineStatus::SHOWED_HELP == parseResult) {
             return 0;
          }
 
