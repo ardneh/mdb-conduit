@@ -73,8 +73,9 @@
 				]
 			},
 			"Release": {
+				"cflags!": [ "-O2" ],	# Working around stripped symbols.
 				"cflags": [
-					"-O2"
+					"-O0"
 				]
 			}
 		},
