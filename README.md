@@ -29,6 +29,10 @@ Examples
    ```
 * See conduit_main() in src/tools/mdb_conduit.cpp for a full example.
 
+Bindings
+--------
+NodeJS: https://www.npmjs.org/package/mdb-conduit
+
 Disclaimers
 -----------
 * The build here is very bare bones and only tested on a newer install of
